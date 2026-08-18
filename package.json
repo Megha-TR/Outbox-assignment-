@@ -1,0 +1,17 @@
+{
+  "name": "outbox-email-scheduler",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:worker": "npm run worker --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "db:migrate": "npm run db:migrate --workspace=backend",
+    "db:generate": "npm run db:generate --workspace=backend"
+  }
+}
