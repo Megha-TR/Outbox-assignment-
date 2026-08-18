@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
+import { env } from "../config/env";
 
 const transporterCache = new Map<string, Transporter>();
 
@@ -18,8 +19,8 @@ export async function getOrCreateTransporter(
     };
   }
 
-  let user = smtpUser;
-  let pass = smtpPass;
+  let user = smtpUser ?? env.etherealUser;
+  let pass = smtpPass ?? env.etherealPass;
 
   if (!user || !pass) {
     const testAccount = await nodemailer.createTestAccount();
@@ -28,10 +29,14 @@ export async function getOrCreateTransporter(
   }
 
   const transporter = nodemailer.createTransport({
-    host: "smtp.ethereal.email",
-    port: 587,
-    secure: false,
+    host: env.smtpHost,
+    port: env.smtpPort,
+    secure: env.smtpSecure,
     auth: { user, pass },
+    // A blocked SMTP port must not leave a BullMQ job in `processing` forever.
+    connectionTimeout: env.smtpConnectionTimeoutMs,
+    greetingTimeout: env.smtpConnectionTimeoutMs,
+    socketTimeout: env.smtpConnectionTimeoutMs,
   });
 
   transporterCache.set(cacheKey, transporter);

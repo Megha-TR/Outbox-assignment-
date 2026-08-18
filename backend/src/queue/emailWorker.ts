@@ -96,10 +96,15 @@ async function processEmailJob(job: Job<EmailJobPayload>): Promise<void> {
   } catch (error) {
     await decrementRateLimits(emailJob.senderId);
     const message = error instanceof Error ? error.message : "Unknown send error";
+    const maxAttempts = job.opts.attempts ?? 1;
+    const willRetry = job.attemptsMade + 1 < maxAttempts;
+
     await prisma.emailJob.update({
       where: { id: emailJobId },
       data: {
-        status: EmailStatus.failed,
+        // BullMQ retries after this error is rethrown. Interim failures must
+        // remain claimable by the next attempt.
+        status: willRetry ? EmailStatus.scheduled : EmailStatus.failed,
         errorMessage: message,
       },
     });

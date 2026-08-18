@@ -27,4 +27,10 @@ export const env = {
   maxEmailsPerHour: optionalInt("MAX_EMAILS_PER_HOUR", 200),
   maxEmailsPerHourPerSender: optionalInt("MAX_EMAILS_PER_HOUR_PER_SENDER", 50),
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
+  smtpHost: process.env.SMTP_HOST ?? "smtp.ethereal.email",
+  smtpPort: optionalInt("SMTP_PORT", 587),
+  smtpSecure: process.env.SMTP_SECURE === "true",
+  smtpConnectionTimeoutMs: optionalInt("SMTP_CONNECTION_TIMEOUT_MS", 10_000),
+  etherealUser: process.env.ETHEREAL_USER,
+  etherealPass: process.env.ETHEREAL_PASS,
 };
