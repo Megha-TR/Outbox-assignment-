@@ -202,5 +202,6 @@ All `/api/*` routes require `Authorization: Bearer <NextAuth JWT>`.
 ## Submission
 
 - **Repo:** https://github.com/Megha-TR/Outbox-assignment-
-- **Collaborators:** Grant access to `Mitrajit` and `Yadav036` on GitHub
+- **Live demo:** Deploy to Railway — see [DEPLOYMENT.md](./DEPLOYMENT.md)
+- **Collaborators:** `Mitrajit`, `Yadav036`
 - **Form:** [Assignment Submission](https://forms.clickup.com/9005062261/f/8cbwp3n-8876/6NNNJ92DV93PQTAYST)
