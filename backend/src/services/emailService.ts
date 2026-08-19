@@ -52,6 +52,38 @@ export async function sendEmail(params: {
   smtpUser?: string | null;
   smtpPass?: string | null;
 }): Promise<{ messageId: string; previewUrl?: string; smtpUser: string; smtpPass: string }> {
+  // ---------------------------------------------------------------------------
+  // SIMULATE_EMAIL mode — used on Railway where outbound SMTP (port 587) is
+  // blocked.  nodemailer's jsonTransport builds the full RFC-2822 message in
+  // memory and returns it as JSON; no network connection is made.  All
+  // scheduling, BullMQ queuing, rate-limiting and DB persistence still work
+  // end-to-end — only the physical SMTP handshake is skipped.
+  // ---------------------------------------------------------------------------
+  if (env.simulateEmail) {
+    const simTransport = nodemailer.createTransport({ jsonTransport: true });
+    const info = await simTransport.sendMail({
+      from: `"ReachInbox Scheduler" <${params.from}>`,
+      to: params.to,
+      subject: params.subject,
+      text: params.body,
+      html: `<p>${params.body.replace(/\n/g, "<br/>")}</p>`,
+    });
+
+    console.log(
+      `[SIMULATE] Email to ${params.to} | subject: "${params.subject}" | messageId: ${info.messageId}`
+    );
+
+    return {
+      messageId: info.messageId,
+      previewUrl: `[Simulated — SMTP blocked on Railway] from=${params.from} to=${params.to}`,
+      smtpUser: params.smtpUser ?? "simulated",
+      smtpPass: params.smtpPass ?? "simulated",
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Normal Ethereal SMTP path (local dev)
+  // ---------------------------------------------------------------------------
   const { transporter, smtpUser, smtpPass } = await getOrCreateTransporter(
     params.from,
     params.smtpUser,

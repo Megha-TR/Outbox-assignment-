@@ -33,4 +33,9 @@ export const env = {
   smtpConnectionTimeoutMs: optionalInt("SMTP_CONNECTION_TIMEOUT_MS", 10_000),
   etherealUser: process.env.ETHEREAL_USER,
   etherealPass: process.env.ETHEREAL_PASS,
+  // Set to "true" on Railway (or any host that blocks SMTP port 587).
+  // Uses nodemailer's jsonTransport to simulate sending locally without a
+  // network connection — all scheduling, rate-limiting and persistence still
+  // work end-to-end; only the physical SMTP handshake is skipped.
+  simulateEmail: process.env.SIMULATE_EMAIL === "true",
 };
