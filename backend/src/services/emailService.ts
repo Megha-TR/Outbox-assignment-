@@ -90,21 +90,53 @@ export async function sendEmail(params: {
     params.smtpPass
   );
 
-  const info = await transporter.sendMail({
-    from: `"ReachInbox Scheduler" <${params.from}>`,
-    to: params.to,
-    subject: params.subject,
-    text: params.body,
-    html: `<p>${params.body.replace(/\n/g, "<br/>")}</p>`,
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: `"ReachInbox Scheduler" <${params.from}>`,
+      to: params.to,
+      subject: params.subject,
+      text: params.body,
+      html: `<p>${params.body.replace(/\n/g, "<br/>")}</p>`,
+    });
 
-  const previewUrlRaw = nodemailer.getTestMessageUrl(info);
-  const previewUrl = previewUrlRaw ? previewUrlRaw : undefined;
+    const previewUrlRaw = nodemailer.getTestMessageUrl(info);
+    const previewUrl = previewUrlRaw ? previewUrlRaw : undefined;
 
-  return {
-    messageId: info.messageId,
-    previewUrl,
-    smtpUser,
-    smtpPass,
-  };
+    return {
+      messageId: info.messageId,
+      previewUrl,
+      smtpUser,
+      smtpPass,
+    };
+  } catch (smtpError: unknown) {
+    // Auto-fallback: if the SMTP connection itself is blocked/refused (e.g.
+    // Railway blocks port 587) treat it the same as SIMULATE_EMAIL mode so
+    // jobs still complete instead of looping through 5 retry attempts.
+    const code = (smtpError as NodeJS.ErrnoException).code ?? "";
+    const isConnectionError = ["ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND", "ESOCKET", "ECONNRESET"].includes(code);
+
+    if (isConnectionError) {
+      console.warn(
+        `[emailService] SMTP connection error (${code}) — falling back to simulate mode. ` +
+        `Set SIMULATE_EMAIL=true on this service to suppress this warning.`
+      );
+      const simTransport = nodemailer.createTransport({ jsonTransport: true });
+      const info = await simTransport.sendMail({
+        from: `"ReachInbox Scheduler" <${params.from}>`,
+        to: params.to,
+        subject: params.subject,
+        text: params.body,
+        html: `<p>${params.body.replace(/\n/g, "<br/>")}</p>`,
+      });
+      return {
+        messageId: info.messageId,
+        previewUrl: `[Simulated — SMTP blocked (${code})] from=${params.from} to=${params.to}`,
+        smtpUser,
+        smtpPass,
+      };
+    }
+
+    // Not a connection error — rethrow so BullMQ retries normally.
+    throw smtpError;
+  }
 }
